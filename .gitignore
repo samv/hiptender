@@ -1,0 +1,7 @@
+/hipchat.cfg
+/*.egg
+*.pyc
+/*.egg-info
+/local_settings.py
+/build
+/dist

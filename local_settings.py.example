@@ -1,0 +1,23 @@
+
+BOT_NAME = "Hip Tender"
+BOT_NICK = "tender"
+BOT_EMAIL = "tender@example.com"
+
+# When to have stand-ups, in crontab(5) format
+SCHEDULE = "15 10 * * 1-5"
+
+# where to run the stand-up
+TEAM_ROOM = "Tender Team Room"
+STANDUP_ROOM = "Tender Stand-up Room"
+
+# users have to have spoken either in the standup channel or the team
+# channel in the last LOOK_BACK_DAYS to be added to the rotation
+LOOK_BACK_DAYS = 3
+
+# looking for something to bikeshed?
+STANDUP_ANNOUNCE_COLOR = "green"
+STANDUP_WHINGE_COLOR = "red"
+
+# don't complain about people speaking in channel more often than this
+# (in seconds)
+WHINGE_INTERVAL = 30
