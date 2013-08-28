@@ -300,7 +300,7 @@ def handle_next(arg, user):
         if next_user_id not in state["todo"]:
             room_say(
                 "%s%s is not on my list to speak." % (
-                    prefix, next_user_id.name,
+                    prefix, state["users"][next_user_id].name,
                 ),
                 color=settings.STANDUP_WHINGE_COLOR,
             )
@@ -388,7 +388,7 @@ def process_message(message):
 
     elif user_id != state["todo"][0]:
         # whinge if people speak out of turn
-        if "last_whinged" not in state["last_whinged"] or (
+        if "last_whinged" not in state or (
             now() - state["last_whinged"]
         ) > timedelta(seconds=settings.WHINGE_INTERVAL):
             room_say(
@@ -396,7 +396,7 @@ def process_message(message):
                 .format(
                     who=user.mention_name,
                     me=settings.BOT_NICK,
-                    them=state["users"][state["todo"]].mention_name,
+                    them=state["users"][state["todo"][0]].mention_name,
                 ),
                 color=settings.STANDUP_WHINGE_COLOR,
             )
