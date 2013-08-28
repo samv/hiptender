@@ -396,7 +396,9 @@ def process_message(message):
             now() - state["last_whinged"]
         ) > timedelta(seconds=settings.WHINGE_INTERVAL):
             room_say(
-                "@{who} hey!  It's not your turn!  Try '@{me} skip {them}'"
+                "@{who} hey!  It's not your turn!  Try '@{me} skip {them}' "
+                "or use '@{me} park something' if you want to be "
+                "reminded 'something' after the standup."
                 .format(
                     who=user.mention_name,
                     me=settings.BOT_NICK,
