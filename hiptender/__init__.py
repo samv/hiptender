@@ -28,12 +28,12 @@ import time
 
 from crontab import CronTab
 from dateutil.parser import parse
+from dateutil.tz import tzlocal
 import gevent
 import hipchat
 import hipchat.config
 from hipchat.room import Room
 from hipchat.user import User
-import pytz
 
 import settings
 
@@ -61,7 +61,7 @@ commands = {
 
 
 def now():
-    return datetime.now(tz=pytz.timezone(settings.BOT_TZ))
+    return datetime.now(tzlocal())
 
 
 def connect_server(cfgfile=None):
@@ -73,15 +73,15 @@ def connect_server(cfgfile=None):
     state["bot_user_id"] = create_user(settings.BOT_NAME)
     state["team_room_id"] = create_room(settings.TEAM_ROOM)
     for standup in cron.find_command("standup"):
-        schedule = standup.schedule(date_from=now())
+        schedule = standup.schedule(date_from=datetime.now())
         schedule_standup(schedule)
 
 
 def schedule_standup(schedule):
     # XXX - allow standups to be skipped on a schedule
-    wait = (
-        schedule.get_next().replace(tzinfo=pytz.timezone("US/Pacific")) - now()
-    ).total_seconds()
+    next_due = schedule.get_next()  # warning: iterator!
+    next_due = next_due.replace(tzinfo=tzlocal())
+    wait = (next_due - now()).total_seconds()
     state["standup_room_id"] = create_room(
         settings.STANDUP_ROOM,
         "No standup in progress - quiet please.",

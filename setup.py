@@ -13,7 +13,6 @@ setup(
 	#"hipchat",
 	"python-crontab",
 	"python-dateutil",
-	"pytz",
     ],
     dependency_links=[
 	'git+https://github.com/samv/python-hipchat@master#egg=hipchat'
