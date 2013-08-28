@@ -11,18 +11,18 @@ Currently it's not very slick :-)
 
 I'd recommend running it from the checkout:
 
-  virtualenv env && . env/bin/activate
-  python setup.py develop
-  pip install -r requirements.txt
-  pip install -e .
+    virtualenv env && . env/bin/activate
+    python setup.py develop
+    pip install -r requirements.txt
+    pip install -e .
 
 ## CONFIGURATION ##
 
 First, copy the configuration files "hipchat.cfg.example" and
 "local_settings.py.example" to their proper names:
 
-  cp hipchat.cfg.example hipchat.cfg
-  cp local_settings.py.example local_settings.py
+    cp hipchat.cfg.example hipchat.cfg
+    cp local_settings.py.example local_settings.py
 
 Then, edit the files.  The hipchat.cfg needs to contain the API token
 that you issued via the API, and it needs to be an admin token.  The
@@ -33,7 +33,7 @@ of the bot for tailoring to your needs.
 
 You should be able to run the bot using:
 
-  hiptender
+    hiptender
 
 There is currently no command-line parsing.  Patches welcome!
 
