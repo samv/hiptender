@@ -7,6 +7,7 @@ BOT_EMAIL = "tender@example.com"
 BOT_PASS = "foobarbaz"
 BOT_TZ = os.environ.get("TZ", "US/Pacific")
 TEAM_ROOM = "Tender Team Room"
+NOTIFY = ""
 STANDUP_ROOM = "Tender Stand-up Room"
 STANDUP_ANNOUNCE_COLOR = "green"
 STANDUP_WHINGE_COLOR = "red"

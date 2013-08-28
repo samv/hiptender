@@ -188,8 +188,12 @@ def daily_standup(schedule):
         "Standup in progress - wait for your turn",
     )
     room_say(
-        message=("@sam Time for stand-up!  Standup is in #%s" %
-                 settings.STANDUP_ROOM),
+        message=(
+            "{all} Time for stand-up!  Standup is in #{room}".format(
+                all=settings.NOTIFY,
+                room=settings.STANDUP_ROOM,
+            )
+        ),
         color=settings.STANDUP_ANNOUNCE_COLOR,
         room="team",
     )

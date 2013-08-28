@@ -10,6 +10,9 @@ SCHEDULE = "15 10 * * 1-5"
 TEAM_ROOM = "Tender Team Room"
 STANDUP_ROOM = "Tender Stand-up Room"
 
+# who to notify
+#NOTIFY = "@all"
+
 # users have to have spoken either in the standup channel or the team
 # channel in the last LOOK_BACK_DAYS to be added to the rotation
 LOOK_BACK_DAYS = 3
