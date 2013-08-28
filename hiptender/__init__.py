@@ -64,30 +64,38 @@ def now():
     return datetime.now(tzlocal())
 
 
-def connect_server(cfgfile=None):
+def start(cfgfile=None):
     if cfgfile is None:
         cfgfile = os.path.join(
             os.path.dirname(__file__), os.pardir, "hipchat.cfg",
         )
     hipchat.config.init_cfg(cfgfile)
+
     state["bot_user_id"] = create_user(settings.BOT_NAME)
     state["team_room_id"] = create_room(settings.TEAM_ROOM)
+    greenlets = []
     for standup in cron.find_command("standup"):
         schedule = standup.schedule(date_from=datetime.now())
-        schedule_standup(schedule)
+        greenlets.append(gevent.spawn(run_standup, schedule))
+    gevent.joinall(greenlets)
 
 
-def schedule_standup(schedule):
+def run_standup(schedule):
     # XXX - allow standups to be skipped on a schedule
-    next_due = schedule.get_next()  # warning: iterator!
-    next_due = next_due.replace(tzinfo=tzlocal())
-    wait = (next_due - now()).total_seconds()
-    state["standup_room_id"] = create_room(
-        settings.STANDUP_ROOM,
-        "No standup in progress - quiet please.",
-    )
-    room_say("next standup in %d seconds" % wait)
-    timer = gevent.core.timer(wait, daily_standup, schedule)
+    while not terminate:
+        next_due = None
+        then = now()
+        while next_due is None or next_due < now():
+            next_due = schedule.get_next()  # warning: iterator!
+            next_due = next_due.replace(tzinfo=tzlocal())
+        wait = (next_due - then).total_seconds()
+        state["standup_room_id"] = create_room(
+            settings.STANDUP_ROOM,
+            "No standup in progress - quiet please.",
+        )
+        room_say("next standup in %d seconds" % wait)
+        gevent.sleep(wait)
+        daily_standup(schedule)
 
 
 def create_user(name):
@@ -203,34 +211,31 @@ def daily_standup(schedule):
     )
     state["schedule"] = schedule
     state["parked_topics"] = list()
+    state["success"] = False
     do_next()
 
-    schedule_loop()
-
-
-def schedule_loop():
-    gevent.core.timer(5, standup_loop)
+    standup_loop()
 
 
 def standup_loop():
-    recent_msgs = Room.history(
-        room_id=state["standup_room_id"],
-        timezone=settings.BOT_TZ,
-        date="recent",
-    )
-    for msg in recent_msgs:
-        msg_date = parse(msg.date)
-        if msg_date <= state["last_checked"]:
-            continue
-        from_info = getattr(msg, "from")
-        if from_info["user_id"] in state["users"]:
-            process_message(msg)
+    while len(state["todo"]) and not terminate:
+        recent_msgs = Room.history(
+            room_id=state["standup_room_id"],
+            timezone=settings.BOT_TZ,
+            date="recent",
+        )
+        for msg in recent_msgs:
+            msg_date = parse(msg.date)
+            if msg_date <= state["last_checked"]:
+                continue
+            from_info = getattr(msg, "from")
+            if from_info["user_id"] in state["users"]:
+                process_message(msg)
 
-    state["last_checked"] = msg_date
-    if len(state["todo"]):
-        schedule_loop()
-    else:
-        standup_done()
+        state["last_checked"] = msg_date
+        gevent.sleep(5)
+
+    return standup_done()
 
 
 def room_say(message, fmt="text", notify=1, color="yellow", room="standup"):
@@ -282,6 +287,8 @@ def do_next():
                 who=next_user.mention_name,
             )
         )
+    else:
+        state["success"] = True
 
 
 def nick_to_user_id(arg):
@@ -411,15 +418,16 @@ def process_message(message):
 
 def standup_done():
     elapsed = now() - state["standup_start"]
-    room_say(
-        "All done!  Stand-up was {days}{minutes}{seconds}".format(
-            days="" if elapsed.days == 0 else "%d day(s), " % elapsed.days,
-            minutes="" if elapsed.seconds < 60 else "%d minute(s), " % (
-                elapsed.seconds / 60
-            ),
-            seconds="%d second(s)" % (elapsed.seconds % 60),
+    if state["success"]:
+        room_say(
+            "All done!  Stand-up was {days}{minutes}{seconds}".format(
+                days="" if elapsed.days == 0 else "%d day(s), " % elapsed.days,
+                minutes="" if elapsed.seconds < 60 else "%d minute(s), " % (
+                    elapsed.seconds / 60
+                ),
+                seconds="%d second(s)" % (elapsed.seconds % 60),
+            )
         )
-    )
     if len(state["parked_topics"]):
         from cgi import escape
         room_say(
@@ -429,7 +437,6 @@ def standup_done():
             fmt="html",
             room="team",
         )
-    schedule_standup(state["schedule"])
 
 
 terminate = False
@@ -445,25 +452,11 @@ def shutdown():
 def main():
     # XXX - parse command-line
     gevent.signal(signal.SIGTERM, shutdown)
-    greenlet = gevent.spawn(connect_server)
-    gevent.joinall([greenlet])
-    global terminate
-    while not terminate:
-        try:
-            gevent.sleep(3600)
-        except KeyboardInterrupt:
-            print "Caught interrupt, what should I do?"
-            terminate = True
-            import gc
-            from greenlet import greenlet
-            for ob in gc.get_objects():
-                if isinstance(ob, greenlet):
-                    print "Canceling %r" % ob
-                    ob.throw()
-            #print "GEvent shutdown"
-            #gevent.shutdown()
-            print "sys.exit()"
-            sys.exit()
+    greenlet = gevent.spawn(start)
+    try:
+        gevent.joinall([greenlet])
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
